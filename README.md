@@ -1,10 +1,10 @@
-# 🛰️ Satellite-Based Landslide Detection using NDVI
+# Satellite-Based Landslide Detection using NDVI
 
 A remote sensing and image processing project that detects landslide-affected areas by analyzing vegetation loss from satellite imagery using NDVI (Normalized Difference Vegetation Index).
 
 ---
 
-## 📌 Project Overview
+## Project Overview
 
 This system takes two satellite images of the same region:
 - **Before a landslide event**
@@ -14,20 +14,20 @@ It then computes vegetation change using NDVI and identifies areas where vegetat
 
 ---
 
-## 🚀 Features
+## Features
 
-- 🌿 NDVI Calculation using Red & NIR bands
-- 🔍 Change Detection (ΔNDVI)
-- 🎯 Threshold-based Landslide Detection
-- 🧹 Morphological Noise Removal
-- 🗺️ Heatmaps for NDVI visualization
-- 🔴 Landslide Area Highlight (Overlay)
-- 📊 Area affected statistics
-- 🌐 Interactive Streamlit Web App
+- NDVI Calculation using Red & NIR bands
+- Change Detection (ΔNDVI)
+- Threshold-based Landslide Detection
+- Morphological Noise Removal
+- Heatmaps for NDVI visualization
+- Landslide Area Highlight (Overlay)
+- Area affected statistics
+- Interactive Streamlit Web App
 
 ---
 
-## 🧠 Tech Stack
+## Tech Stack
 
 - **Python 3.10+**
 - NumPy
@@ -38,7 +38,7 @@ It then computes vegetation change using NDVI and identifies areas where vegetat
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 - `data/` → raw, processed, and output data
 - `src/preprocessing/` → satellite image preprocessing
@@ -48,7 +48,7 @@ It then computes vegetation change using NDVI and identifies areas where vegetat
 
 ---
 
-## ⚙️ How It Works
+## How It Works
 
 1. Load satellite images (.tif)
 2. Extract Red & NIR bands
@@ -60,7 +60,7 @@ It then computes vegetation change using NDVI and identifies areas where vegetat
 
 ---
 
-## ▶️ How to Run
+## How to Run
 
 ```bash
 # Create virtual environment
