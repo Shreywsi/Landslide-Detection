@@ -53,3 +53,27 @@ It then computes vegetation change using NDVI and identifies areas where vegetat
 1. Load satellite images (.tif)
 2. Extract Red & NIR bands
 3. Compute NDVI:
+   NDVI = (NIR - Red) / (NIR + Red)
+4. Calculate NDVI difference (ΔNDVI)
+5. Apply threshold to detect vegetation loss
+6. Generate landslide mask and overlay
+
+---
+
+## ▶️ How to Run
+
+```bash
+# Create virtual environment
+python -m venv venv
+
+# Activate environment
+venv\Scripts\activate   # Windows
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run full pipeline
+python main.py
+
+# Run UI
+streamlit run ui/app.py
