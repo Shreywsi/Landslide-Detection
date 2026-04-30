@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Landslide Detection Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #080c14;
+  --surface: #0d1422;
+  --surface2:#111827;
+  --border:  #1e2d45;
+  --teal:    #0ff4c6;
+  --amber:   #f59e0b;
+  --red:     #ef4444;
+  --dim:     #4b6080;
+  --text:    #c9d8ee;
+  --textlo:  #6b7e99;
+  --mono:    'Space Mono', monospace;
+  --sans:    'DM Sans', sans-serif;
+  --sev:     #ef4444;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px);pointer-events:none;z-index:999}
+/* HEADER */
+.header{background:linear-gradient(180deg,#0a1628 0%,#080c14 100%);border-bottom:1px solid var(--border);padding:36px 48px 28px;position:relative;overflow:hidden}
+.header::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(15,244,198,.06) 0%,transparent 70%);pointer-events:none}
+.header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.sat-label{font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;color:var(--teal);text-transform:uppercase;margin-bottom:8px}
+.header h1{font-family:var(--mono);font-size:1.75rem;font-weight:700;letter-spacing:-.02em;color:#fff;line-height:1.1}
+.header h1 span{color:var(--teal)}
+.header-meta{font-family:var(--mono);font-size:.7rem;color:var(--dim);line-height:1.8;text-align:right}
+.severity-pill{display:inline-flex;align-items:center;gap:8px;background:#7f1d1d;border:1px solid #ef444455;color:#ef4444;font-family:var(--mono);font-size:.75rem;font-weight:700;letter-spacing:.1em;padding:6px 16px;border-radius:4px;margin-top:16px}
+.pulse-dot{width:8px;height:8px;border-radius:50%;background:#ef4444;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+/* LAYOUT */
+.page{padding:32px 48px 64px;max-width:1280px;margin:0 auto}
+.section-label{font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;color:var(--teal);text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+/* ALERT */
+.alert-banner{background:linear-gradient(135deg,#1c0a0a 0%,#1a0d0d 100%);border:1px solid #7f1d1d55;border-left:3px solid var(--red);border-radius:8px;padding:18px 24px;margin-bottom:32px;display:flex;gap:16px;align-items:flex-start}
+.alert-icon{font-size:1.4rem;flex-shrink:0;margin-top:2px}
+.alert-title{font-family:var(--mono);font-size:.8rem;font-weight:700;color:#fca5a5;letter-spacing:.06em;margin-bottom:4px}
+.alert-body{font-size:.9rem;color:#fca5a5aa;line-height:1.5}
+.alert-body strong{color:#fca5a5}
+/* GRIDS */
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+@media(max-width:900px){.grid-4{grid-template-columns:repeat(2,1fr)}.grid-3{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.grid-4,.grid-3,.grid-2{grid-template-columns:1fr}.page{padding:20px 20px 48px}.header{padding:24px 20px}}
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;position:relative;overflow:hidden;transition:border-color .2s}
+.card:hover{border-color:#2a4060}
+.card-accent{position:absolute;top:0;left:0;right:0;height:2px;background:var(--teal)}
+.card-accent.amber{background:var(--amber)}.card-accent.red{background:var(--red)}.card-accent.sev{background:var(--sev)}
+.card-label{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;color:var(--textlo);text-transform:uppercase;margin-bottom:10px}
+.card-value{font-family:var(--mono);font-size:1.7rem;font-weight:700;color:#fff;line-height:1;margin-bottom:4px;animation:countUp .5s ease both}
+.card-value.teal{color:var(--teal)}.card-value.amber{color:var(--amber)}.card-value.red{color:var(--red)}
+.card-sub{font-size:.9rem;color:var(--text);line-height:1.4}
+@keyframes countUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+/* RISK RING */
+.risk-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;display:flex;gap:24px;align-items:center}
+.risk-ring-wrap{position:relative;width:100px;height:100px;flex-shrink:0}
+.risk-ring-wrap svg{transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:var(--border);stroke-width:8}
+.ring-fill{fill:none;stroke:var(--sev);stroke-width:8;stroke-dasharray:116 283;stroke-linecap:round}
+.ring-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-number{font-family:var(--mono);font-size:1.4rem;font-weight:700;color:var(--sev);line-height:1}
+.ring-sub{font-family:var(--mono);font-size:.5rem;color:var(--dim);text-align:center;margin-top:2px}
+.risk-info h3{font-family:var(--mono);font-size:.75rem;font-weight:700;color:var(--text);letter-spacing:.06em;margin-bottom:8px}
+.risk-breakdown{list-style:none}
+.risk-breakdown li{font-family:var(--mono);font-size:.65rem;color:var(--textlo);display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)}
+.risk-breakdown li span{color:var(--teal)}
+/* PROGRESS BARS */
+.pbar-wrap{margin:8px 0}
+.pbar-label{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.62rem;color:var(--textlo);margin-bottom:5px}
+.pbar-track{background:var(--border);border-radius:3px;height:6px;overflow:hidden}
+.pbar-fill{height:100%;border-radius:3px;background:var(--teal);transition:width .8s ease}
+.pbar-fill.amber{background:var(--amber)}.pbar-fill.red{background:var(--red)}
+/* NDVI COMPARISON */
+.ndvi-row{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;padding:16px 0}
+.ndvi-block{background:var(--surface2);border-radius:8px;padding:16px;text-align:center;border:1px solid var(--border)}
+.ndvi-val{font-family:var(--mono);font-size:2rem;font-weight:700}
+.ndvi-lbl{font-size:.75rem;color:var(--textlo);margin-top:4px}
+.ndvi-arrow{font-size:1.4rem;color:var(--red);text-align:center;font-family:var(--mono)}
+.ndvi-drop-badge{background:#1a0808;border:1px solid #7f1d1d55;border-radius:6px;padding:6px 12px;font-family:var(--mono);font-size:.8rem;color:var(--red);text-align:center;margin-top:4px}
+/* TIMELINE */
+.timeline{position:relative;padding:8px 0}
+.timeline::before{content:'';position:absolute;left:16px;top:0;bottom:0;width:1px;background:var(--border)}
+.tl-item{display:flex;gap:20px;align-items:flex-start;margin-bottom:20px;position:relative}
+.tl-dot{width:32px;height:32px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;position:relative;z-index:1}
+.tl-dot.active{border-color:var(--teal);background:#0d2420}
+.tl-body h4{font-family:var(--mono);font-size:.78rem;font-weight:700;color:var(--text);margin-bottom:3px}
+.tl-body p{font-size:.92rem;color:var(--text);line-height:1.5}
+.tl-tag{display:inline-block;background:#0d2420;border:1px solid #0ff4c622;color:var(--teal);font-family:var(--mono);font-size:.62rem;padding:2px 8px;border-radius:3px;margin-top:4px;letter-spacing:.08em}
+.tl-tag.amber{background:#1a1200;border-color:#f59e0b22;color:var(--amber)}
+.tl-tag.red{background:#1a0808;border-color:#ef444422;color:var(--red)}
+/* METRICS DASHBOARD */
+.metrics-dashboard{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.metrics-col h3{font-family:var(--mono);font-size:.7rem;color:var(--teal);margin-bottom:16px;border-left:2px solid var(--teal);padding-left:10px}
+.metric-row{display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding:8px 0}
+.metric-label{color:var(--text);font-size:.85rem}
+.metric-value{font-family:var(--mono);font-weight:700;font-size:.9rem}
+.metric-value.amber{color:var(--amber)}.metric-value.red{color:var(--red)}.metric-value.teal{color:var(--teal)}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
+.stat-box{background:var(--surface2);border-radius:8px;padding:12px}
+.stat-box-label{font-size:.82rem;color:var(--text);margin-bottom:6px}
+.stat-box-value{font-size:1.1rem;font-family:var(--mono);font-weight:700}
+/* IMAGES */
+.img-gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;align-items:flex-start;margin-bottom:24px}
+.img-wrapper{display:flex;justify-content:flex-start}
+.img-frame{background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden;max-width:540px;margin:0}
+.img-label{font-family:var(--mono);font-size:.75rem;color:#9fe8ff;letter-spacing:.11em;padding:10px 12px;border-bottom:1px solid var(--border);text-transform:uppercase}
+.img-frame img{width:100%;max-width:540px;display:block}
+.img-placeholder{aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;color:var(--text);font-family:var(--mono);font-size:.75rem;background:#090d18}
+.img-caption{
+  font-family: var(--mono);
+  font-size: .78rem;
+  color: var(--text);
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  line-height: 1.6;
+}
+.viz-group-label{font-family:var(--mono);font-size:.8rem;color:var(--text);margin-bottom:8px;letter-spacing:.12em;text-transform:uppercase}
+/* RAW DATA */
+details summary{cursor:pointer;font-family:var(--mono);font-size:.82rem;color:var(--text);padding:12px;user-select:none}
+details summary:hover{background:var(--surface2);border-radius:6px}
+pre{font-family:var(--mono);font-size:.8rem;color:var(--text);line-height:1.5;margin:0;white-space:pre-wrap;word-wrap:break-word}
+/* RECOMMENDATIONS */
+.rec-list{list-style:none}
+.rec-item{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);align-items:flex-start}
+.rec-item:last-child{border-bottom:none}
+.rec-icon{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
+.rec-icon.red{background:#1a0808;border:1px solid #ef444433}
+.rec-icon.amber{background:#1a1200;border:1px solid #f59e0b33}
+.rec-icon.teal{background:#0a1e1a;border:1px solid #0ff4c633}
+.rec-text h4{font-family:var(--mono);font-size:.7rem;font-weight:700;color:var(--text);margin-bottom:2px}
+.rec-text p{font-size:.82rem;color:var(--textlo);line-height:1.4}
+/* FOOTER */
+.footer{border-top:1px solid var(--border);padding:20px 48px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.footer-brand{font-family:var(--mono);font-size:.65rem;color:var(--dim)}
+.footer-brand strong{color:var(--teal)}
+section{margin-bottom:40px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="sat-label">Sentinel-2 · NDVI Change Detection · Landslide Analysis</div>
+      <h1>LANDSLIDE<br><span>DETECTION REPORT</span></h1>
+      <div class="severity-pill">
+        <div class="pulse-dot"></div>
+        EXTREME SEVERITY — ESTABLISHED
+      </div>
+    </div>
+    <div class="header-meta">
+      REPORT ID: LS-20260417-1117<br>
+      GENERATED: 2026-04-17  11:17:29  UTC<br>
+      SENSOR: Sentinel-2 MSI L2A<br>
+      RESOLUTION: 10 m/px<br>
+      BANDS: B04, B08 (NDVI)<br>
+      CONFIDENCE: 60%
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- ALERT -->
+<div class="alert-banner">
+  <div class="alert-icon">🚨</div>
+  <div>
+    <div class="alert-title">CATASTROPHIC VEGETATION LOSS DETECTED</div>
+    <div class="alert-body">
+      Spectral analysis confirms a <strong>major land-surface disturbance</strong> covering
+      <strong>18.6%</strong> of the monitored region
+      (575.2 km²). NDVI delta of
+      <strong>−-0.090</strong> is consistent with sudden slope failure.
+      Immediate ground-truth verification and emergency response recommended.
+    </div>
+  </div>
+</div>
+
+<!-- 01 · KEY METRICS -->
+<section>
+  <div class="section-label">01 · Key Metrics</div>
+  <div class="grid-4">
+    <div class="card">
+      <div class="card-accent sev"></div>
+      <div class="card-label">Landslide Status</div>
+      <div class="card-value teal">✓ DETECTED</div>
+      <div class="card-sub">Confidence: 60%</div>
+    </div>
+    <div class="card">
+      <div class="card-accent sev"></div>
+      <div class="card-label">Severity</div>
+      <div class="card-value" style="color:var(--sev)">EXTREME</div>
+      <div class="card-sub">Level 4 / 4</div>
+    </div>
+    <div class="card">
+      <div class="card-accent amber"></div>
+      <div class="card-label">Affected Area</div>
+      <div class="card-value amber">575.2 km²</div>
+      <div class="card-sub">≈ 0 Maldives</div>
+    </div>
+    <div class="card">
+      <div class="card-accent red"></div>
+      <div class="card-label">Area Impacted</div>
+      <div class="card-value red">18.6%</div>
+      <div class="card-sub">of 3101 km² analyzed</div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 · RISK INDEX + IMPACT -->
+<section>
+  <div class="section-label">02 · Risk Index &amp; Impact Assessment</div>
+  <div class="grid-2">
+    <div class="risk-card">
+      <div class="risk-ring-wrap">
+        <svg viewBox="0 0 100 100" width="100" height="100">
+          <circle class="ring-bg"   cx="50" cy="50" r="45"/>
+          <circle class="ring-fill" cx="50" cy="50" r="45"/>
+        </svg>
+        <div class="ring-label">
+          <div class="ring-number">41</div>
+          <div class="ring-sub">/100<br>RISK</div>
+        </div>
+      </div>
+      <div class="risk-info">
+        <h3>COMPOSITE RISK INDEX</h3>
+        <ul class="risk-breakdown">
+          <li>NDVI Severity (40 pts) <span>-5</span></li>
+          <li>Area Impact (35 pts)   <span>21</span></li>
+          <li>Class Weight (25 pts)  <span>25</span></li>
+        </ul>
+        <div style="margin-top:12px">
+          <div class="pbar-wrap">
+            <div class="pbar-label"><span>Erosion Risk</span><span>Low</span></div>
+            <div class="pbar-track"><div class="pbar-fill amber" style="width:23%"></div></div>
+          </div>
+          <div class="pbar-wrap">
+            <div class="pbar-label"><span>Downstream Flood Risk</span><span>Moderate</span></div>
+            <div class="pbar-track"><div class="pbar-fill red" style="width:34%"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="card">
+        <div class="card-accent red"></div>
+        <div class="card-label">Est. Pop. Exposed</div>
+        <div class="card-value red">~103,540</div>
+        <div class="card-sub">persons within zone<br>(180 p/km² avg density)</div>
+      </div>
+      <div class="card">
+        <div class="card-accent amber"></div>
+        <div class="card-label">Carbon Loss</div>
+        <div class="card-value amber">217,305</div>
+        <div class="card-sub">tonnes biomass carbon<br>released / degraded</div>
+      </div>
+      <div class="card">
+        <div class="card-accent" style="background:#f59e0b"></div>
+        <div class="card-label">Econ. Loss Estimate</div>
+        <div class="card-value" style="color:#fcd34d">₹6,01,21,19,276</div>
+        <div class="card-sub">₹ (forest land value)<br>₹4,15,000/ha baseline</div>
+      </div>
+      <div class="card">
+        <div class="card-accent"></div>
+        <div class="card-label">Spectral Anomaly Ratio</div>
+        <div class="card-value teal">0.246</div>
+        <div class="card-sub">ΔNDVI / NDVI_pre<br>Higher = more abrupt</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 · NDVI ANALYSIS -->
+<section>
+  <div class="section-label">03 · Vegetation Index Analysis</div>
+  <div class="card">
+    <div class="ndvi-row">
+      <div class="ndvi-block">
+        <div class="ndvi-val" style="color:var(--teal)">-0.367</div>
+        <div class="ndvi-lbl">NDVI PRE-EVENT<br>Dense / Healthy Canopy</div>
+      </div>
+      <div>
+        <div class="ndvi-arrow">→</div>
+        <div class="ndvi-drop-badge">−-0.090<br>DROP</div>
+      </div>
+      <div class="ndvi-block">
+        <div class="ndvi-val" style="color:var(--red)">-0.277</div>
+        <div class="ndvi-lbl">NDVI POST-EVENT<br>Bare Soil / Rock</div>
+      </div>
+    </div>
+    <div style="padding-top:8px">
+      <div class="pbar-wrap">
+        <div class="pbar-label"><span>Vegetation Loss</span><span>25%</span></div>
+        <div class="pbar-track"><div class="pbar-fill red" style="width:25.18504903427437%"></div></div>
+      </div>
+      <div class="pbar-wrap">
+        <div class="pbar-label"><span>NDVI Change Magnitude</span><span>-13% of max scale</span></div>
+        <div class="pbar-track"><div class="pbar-fill amber" style="width:-12.840449810028076%"></div></div>
+      </div>
+      <div class="pbar-wrap">
+        <div class="pbar-label"><span>Area Coverage</span><span>18.6%</span></div>
+        <div class="pbar-track"><div class="pbar-fill" style="width:18.550699024999524%"></div></div>
+      </div>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap;">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 16px;">
+        <div style="font-family:var(--mono);font-size:.6rem;color:var(--textlo);">TOTAL PIXELS</div>
+        <div style="font-family:var(--mono);font-size:1rem;color:var(--text);">31,008,190</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 16px;">
+        <div style="font-family:var(--mono);font-size:.6rem;color:var(--textlo);">FLAGGED PIXELS</div>
+        <div style="font-family:var(--mono);font-size:1rem;color:var(--red);">5,752,236</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 16px;">
+        <div style="font-family:var(--mono);font-size:.6rem;color:var(--textlo);">EVENT AGE EST.</div>
+        <div style="font-family:var(--mono);font-size:1rem;color:var(--amber);">>3 months</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 16px;">
+        <div style="font-family:var(--mono);font-size:.6rem;color:var(--textlo);">CONFIDENCE</div>
+        <div style="font-family:var(--mono);font-size:1rem;color:var(--teal);">60%</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 · COMPLETE IMPACT DASHBOARD -->
+<section>
+  <div class="section-label">04 · Complete Impact Dashboard</div>
+  <div class="card">
+    <div class="metrics-dashboard">
+      <div class="metrics-col">
+        <h3>💧 HYDROLOGICAL IMPACT</h3>
+        <div class="metric-row">
+          <span class="metric-label">Runoff Increase</span>
+          <span class="metric-value amber">+12%</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Peak Discharge Multiplier</span>
+          <span class="metric-value">1.13×</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Sediment Yield (annual)</span>
+          <span class="metric-value red">-249,281 t/yr</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Debris Flow Volume</span>
+          <span class="metric-value">2,300,894,400 m³</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Avg. Debris Depth</span>
+          <span class="metric-value">4.0 m</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Water Retention Loss</span>
+          <span class="metric-value">39,690 ML/yr</span>
+        </div>
+      </div>
+      <div class="metrics-col">
+        <h3>⚠️ STABILITY &amp; RISK INDICATORS</h3>
+        <div class="metric-row">
+          <span class="metric-label">Slope Instability Index</span>
+          <span class="metric-value red">3.2/10</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Secondary Landslide Prob.</span>
+          <span class="metric-value amber">32%</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Fragmentation Index</span>
+          <span class="metric-value">0.06 (Clustered)</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Insurance Loss Ratio</span>
+          <span class="metric-value">10.5× annual premium</span>
+        </div>
+      </div>
+      <div style="grid-column:1/-1;margin-top:16px;">
+        <h3 style="font-family:var(--mono);font-size:.7rem;color:var(--teal);margin-bottom:16px;border-left:2px solid var(--teal);padding-left:10px;">🌍 ENVIRONMENTAL &amp; ECONOMIC FOOTPRINT</h3>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-box-label">CO₂ Equivalent Released</div>
+            <div class="stat-box-value red">796,857</div>
+            <div style="font-size:.65rem;color:var(--textlo);">tonnes CO₂e</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-label">Reforestation Cost</div>
+            <div class="stat-box-value amber">₹14,32,30,67,640</div>
+            <div style="font-size:.82rem;color:var(--text);">INR est.</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-label">Vegetation Loss</div>
+            <div class="stat-box-value red">25%</div>
+            <div style="font-size:.65rem;color:var(--textlo);">of pre-event biomass</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- 06 · SATELLITE VISUALIZATIONS -->
+<section>
+  <div class="section-label">06 · Satellite &amp; Analysis Visualizations</div>
+
+  <!-- Row 1: CORE DETECTION MAPS -->
+  <div class="viz-group-label" style="margin-bottom:8px;">CORE DETECTION MAPS</div>
+  <div class="img-gallery">
+    <div class="img-wrapper">
+      
+    <div class="img-frame">
+  <div class="img-label">Before / After NDVI Comparison</div>
+  <img src="comparison.png" alt="Before / After NDVI Comparison"
+       onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+  <div class="img-placeholder" style="display:none;">comparison.png not found</div>
+  <div class="img-caption">False-colour RdYlGn composite (B08/B04). Green pixels indicate NDVI &gt; 0.4 (dense canopy); red/yellow indicate NDVI &lt; 0.2 (sparse or absent vegetation). Spatial shift between panels reveals extent of crown cover removal post-event.</div>
+</div>
+    </div>
+    <div class="img-wrapper">
+      
+    <div class="img-frame">
+  <div class="img-label">NDVI Delta Map — Change Magnitude</div>
+  <img src="delta_ndvi.png" alt="NDVI Delta Map — Change Magnitude"
+       onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+  <div class="img-placeholder" style="display:none;">delta_ndvi.png not found</div>
+  <div class="img-caption">Pixel-wise arithmetic difference (NDVI_post − NDVI_pre) rendered on a diverging RdBu_r colormap clipped to ±0.5. Negative values (red) indicate vegetation loss; near-zero (white) = stable surface; positive (blue) = anomalous greening or phenological noise. Threshold applied at ΔNDVI &lt; −0.2 to define the mask.</div>
+</div>
+    </div>
+    <div class="img-wrapper">
+      
+    <div class="img-frame">
+  <div class="img-label">Detection Overlay — Flagged Pixels</div>
+  <img src="detection_overlay.png" alt="Detection Overlay — Flagged Pixels"
+       onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+  <div class="img-placeholder" style="display:none;">detection_overlay.png not found</div>
+  <div class="img-caption">Post-event NDVI rendered in greyscale (luminance proxy) with the binary landslide mask composited at 50% opacity in the Reds colormap. Each red pixel passed the ΔNDVI threshold and spatial contiguity filter. Isolated single-pixel detections are suppressed by morphological opening (3×3 kernel).</div>
+</div>
+    </div>
+  </div>
+
+  <!-- Row 2: NDVI RASTER OUTPUTS -->
+  <div class="viz-group-label" style="margin-bottom:8px;">NDVI RASTER OUTPUTS</div>
+  <div class="img-gallery">
+    <div class="img-wrapper">
+      
+    <div class="img-frame">
+  <div class="img-label">NDVI Raster — Pre-Event Baseline</div>
+  <img src="ndvi_before.png" alt="NDVI Raster — Pre-Event Baseline"
+       onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+  <div class="img-placeholder" style="display:none;">ndvi_before.png not found</div>
+  <div class="img-caption">Normalised Difference Vegetation Index computed from Sentinel-2 L2A bands B08 (NIR, 842 nm) and B04 (Red, 665 nm): NDVI = (B08−B04)/(B08+B04). Values range −1 to +1; dense forest typically 0.55–0.85. Serves as the radiometric baseline for change detection. Cloud/shadow pixels masked via SCL band.</div>
+</div>
+    </div>
+    <div class="img-wrapper">
+      
+    <div class="img-frame">
+  <div class="img-label">NDVI Raster — Post-Event State</div>
+  <img src="ndvi_after.png" alt="NDVI Raster — Post-Event State"
+       onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+  <div class="img-placeholder" style="display:none;">ndvi_after.png not found</div>
+  <div class="img-caption">Same NDVI formula applied to the post-event acquisition. Landslide scars appear as abrupt low-NDVI patches (0.0–0.15) against the surrounding vegetated matrix. Residual moisture on exposed regolith can produce slight positive bias (~+0.05–0.10) in freshly deposited material.</div>
+</div>
+    </div>
+  </div>
+
+  <!-- Row 3: STATISTICAL ANALYSIS -->
+  <div class="viz-group-label" style="margin-bottom:8px;">STATISTICAL ANALYSIS</div>
+  <div class="img-gallery">
+    <div class="img-wrapper">
+      
+    <div class="img-frame">
+  <div class="img-label">NDVI Loss Distribution — Flagged Pixels Only</div>
+  <img src="loss_histogram.png" alt="NDVI Loss Distribution — Flagged Pixels Only"
+       onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+  <div class="img-placeholder" style="display:none;">loss_histogram.png not found</div>
+  <div class="img-caption">Frequency histogram of ΔNDVI values within the detected landslide mask (50 bins). A unimodal distribution centred near the threshold indicates a single homogeneous event; bimodal peaks suggest mixed damage classes (e.g., complete canopy removal vs. partial defoliation). Tail extent toward −1.0 reflects bare-soil exposure depth.</div>
+</div>
+    </div>
+    <div class="img-wrapper">
+      
+    <div class="img-frame">
+  <div class="img-label">Pre vs Post NDVI Scatter — Landslide Pixels</div>
+  <img src="scatter_plot.png" alt="Pre vs Post NDVI Scatter — Landslide Pixels"
+       onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+  <div class="img-placeholder" style="display:none;">scatter_plot.png not found</div>
+  <div class="img-caption">Each point represents one flagged pixel plotted as (NDVI_pre, NDVI_post). The 1:1 identity line (white dash) represents zero change. Points below the diagonal indicate loss; the horizontal spread reflects pre-event heterogeneity (mixed forest / agriculture). Cluster density in the lower-right quadrant (high pre, low post) confirms acute vegetation removal rather than gradual decline.</div>
+</div>
+    </div>
+    <div class="img-wrapper">
+      
+    <div class="img-frame">
+  <div class="img-label">NDVI Distribution Violin — Pre vs Post (Landslide Zone)</div>
+  <img src="violin_plot.png" alt="NDVI Distribution Violin — Pre vs Post (Landslide Zone)"
+       onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+  <div class="img-placeholder" style="display:none;">violin_plot.png not found</div>
+  <div class="img-caption">Kernel density estimate of NDVI values within the masked zone before and after the event. Width encodes probability density; white dot = median; thick bar = IQR; thin whisker = 1.5×IQR. A narrow pre-event violin with high median indicates uniform dense canopy; a wide, low post-event violin indicates heterogeneous bare-soil / debris surface.</div>
+</div>
+    </div>
+  </div>
+
+  <!-- Row 4: SEVERITY & SPATIAL DISTRIBUTION -->
+  <div class="viz-group-label" style="margin-bottom:8px;">SEVERITY &amp; SPATIAL DISTRIBUTION</div>
+  <div class="img-gallery">
+    <div class="img-wrapper">
+      
+    <div class="img-frame">
+  <div class="img-label">Severity Heatmap — Spatial Intensity</div>
+  <img src="severity_heatmap.png" alt="Severity Heatmap — Spatial Intensity"
+       onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+  <div class="img-placeholder" style="display:none;">severity_heatmap.png not found</div>
+  <div class="img-caption">ΔNDVI raster masked to negative values and rendered on a "hot" colormap (dark = mild loss, bright yellow/white = extreme loss). Reveals spatial gradients within the scar: core depletion zones vs. peripheral partial-damage halos. Can be cross-referenced with DEM slope data to assess aspect-dependent failure patterns.</div>
+</div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 · RECOMMENDATIONS -->
+<section>
+  <div class="section-label">07 · Emergency Recommendations</div>
+  <div class="card">
+    <ul class="rec-list">
+      <li class="rec-item">
+        <div class="rec-icon red">🚨</div>
+        <div class="rec-text">
+          <h4>IMMEDIATE EVACUATION</h4>
+          <p>Evacuate all settlements in downstream flow paths. Estimated ~103,540 persons may be at risk. Coordinate with district disaster management authority.</p>
+        </div>
+      </li>
+      <li class="rec-item">
+        <div class="rec-icon red">✈️</div>
+        <div class="rec-text">
+          <h4>AERIAL SURVEY &amp; GROUND TRUTH</h4>
+          <p>Deploy drone or helicopter survey to validate detection boundaries and identify blocked drainage channels within 24–48 hours.</p>
+        </div>
+      </li>
+      <li class="rec-item">
+        <div class="rec-icon amber">📡</div>
+        <div class="rec-text">
+          <h4>CONTINUOUS SAR MONITORING</h4>
+          <p>Request Sentinel-1 SAR acquisitions every 6–12 days for cloud-penetrating repeat coverage. Compare with optical NDVI to track expansion.</p>
+        </div>
+      </li>
+      <li class="rec-item">
+        <div class="rec-icon amber">🌊</div>
+        <div class="rec-text">
+          <h4>DOWNSTREAM FLOOD ALERT</h4>
+          <p>Flood risk classified as <strong style="color:var(--amber)">Moderate</strong>. Runoff increased by <strong style="color:var(--amber)">12%</strong> (1.13× peak discharge). Install temporary gauges and alert downstream communities.</p>
+        </div>
+      </li>
+      <li class="rec-item">
+        <div class="rec-icon amber">🪨</div>
+        <div class="rec-text">
+          <h4>SEDIMENT &amp; DEBRIS MANAGEMENT</h4>
+          <p>Estimated debris volume: <strong style="color:var(--amber)">2,300,894,400 m³</strong> at avg depth 4.0 m. Inspect downstream channels for blockage. Annual sediment load estimate: -249,281 t/yr.</p>
+        </div>
+      </li>
+      <li class="rec-item">
+        <div class="rec-icon teal">🌿</div>
+        <div class="rec-text">
+          <h4>REFORESTATION PLANNING</h4>
+          <p>Begin bioengineering (vetiver grass, contour bunds) within 3–6 months. Reforestation cost estimate: <strong style="color:var(--teal)">₹14,32,30,67,640 INR</strong>. Target carbon restoration: 217,305 tonnes (796,857 t CO₂e).</p>
+        </div>
+      </li>
+      <li class="rec-item">
+        <div class="rec-icon teal">📊</div>
+        <div class="rec-text">
+          <h4>ECONOMIC IMPACT DOCUMENTATION</h4>
+          <p>Ecosystem loss: <strong style="color:#fcd34d">₹6,01,21,19,276 INR</strong>. Insurance loss ratio: <strong style="color:#fcd34d">10.5×</strong> annual premium pool. Document for claims, government relief, and carbon credit offset programs.</p>
+        </div>
+      </li>
+    </ul>
+  </div>
+</section>
+<!-- 05 · RECOVERY TIMELINE -->
+<section>
+  <div class="section-label">05 · Projected Recovery Timeline</div>
+  <div class="card">
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot active">🔴</div>
+        <div class="tl-body">
+          <h4>NOW — EMERGENCY PHASE</h4>
+          <p>Active slide zone. Bare soil exposed. High secondary landslide and debris-flow risk. Immediate evacuation and stabilization needed.</p>
+          <span class="tl-tag red">CRITICAL WINDOW</span>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot">🌱</div>
+        <div class="tl-body">
+          <h4>YEAR 1–7 — GROUND COVER RETURN</h4>
+          <p>Pioneer grasses and mosses begin colonizing. Erosion rate starts declining. Active reforestation efforts should begin.</p>
+          <span class="tl-tag amber">STABILIZATION</span>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot">🌿</div>
+        <div class="tl-body">
+          <h4>YEAR 8–20 — SHRUB / SECONDARY GROWTH</h4>
+          <p>Shrubland develops. NDVI values may partially recover to ~0.30–0.45. Soil carbon begins rebuilding.</p>
+          <span class="tl-tag">ECOLOGICAL RECOVERY</span>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot">🌳</div>
+        <div class="tl-body">
+          <h4>YEAR 21–50 — FOREST REGENERATION</h4>
+          <p>Secondary forest canopy established. NDVI returns toward pre-event values. Full biodiversity recovery may take longer.</p>
+          <span class="tl-tag">LONG-TERM</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- 08 · RAW DATA EXPORT -->
+
+
+</div><!-- /page -->
+
+<div class="footer">
+  <div class="footer-brand">
+    <strong>NDVI LANDSLIDE DETECTION SYSTEM</strong><br>
+    Sentinel-2 Satellite · NDVI Change Detection · Level-2 Analysis
+  </div>
+  <div class="footer-brand" style="text-align:right">
+    Report ID: LS-20260417-1117<br>
+    2026-04-17  11:17:29  UTC
+  </div>
+</div>
+
+</body>
+</html>
+        
