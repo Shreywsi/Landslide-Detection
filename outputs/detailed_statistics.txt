@@ -1,0 +1,19 @@
+
+LANDSLIDE STATISTICS SUMMARY
+============================
+
+GENERAL:
+  Total Landslides: 21282
+  Affected Pixels: 12,734,597 (41.1%)
+  Total Area: 31,008,190 pixels
+
+SEVERITY BREAKDOWN:
+  Extreme (>0.5): 5,950,706 pixels (46.7%)
+  High (0.3-0.5): 4,384,975 pixels (34.4%)
+  Moderate (0.2-0.3): 2,398,916 pixels (18.8%)
+  Low (0.1-0.2): 0 pixels (0.0%)
+
+NDVI VALUES:
+  Mean Before: 0.3669
+  Mean After: 0.2770
+  Mean Drop: 0.1489
